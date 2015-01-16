@@ -1,0 +1,14 @@
+{
+    "applications": {
+        "_default": {
+            "link": "lexponential"
+        }, 
+        "lexponential": {
+            "applicationId": "0Byvjgx03Q2T5Y2EbW72WUwFW0hGTTiCzhY0p9gv", 
+            "masterKey": "SuCgxBHuSqrf0COXXZo9LYrRslRuhFT9BzN7qa1N"
+        }
+    }, 
+    "global": {
+        "parseVersion": "1.3.3"
+    }
+}
