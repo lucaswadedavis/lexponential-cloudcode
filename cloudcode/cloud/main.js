@@ -3,10 +3,11 @@
 // For example:
 
 Parse.Cloud.afterSave("Todo", function(request, response) {
-  var words=JSON.parse(request);
-  console.log(request.content);
+  var words;
+  //words=JSON.parse(request);
+  //console.log(request.content);
   console.log("Luke!");
-  words=words.content;
+  words=request.object.get("content");
   words=words.split(" ");
 
   //make the Lexicon constructor function (class)
