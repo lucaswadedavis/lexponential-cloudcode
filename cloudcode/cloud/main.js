@@ -7,21 +7,22 @@ Parse.Cloud.define("chop", function(request, response) {
   words=words.split(" ");
 
   //make the Lexicon constructor function (class)
-  var Lexicon=Parse.Object.extend("Lexicon");
-  var lexicon=new Lexicon();
+  var Word=Parse.Object.extend("Word");
 
   for (var i=0;i<words.length;i++){
-    lexicon.set(words[i],Math.floor(1000*Math.random() ));
+    var word=new Word();
+    word.set("count",Math.floor(1000*Math.random() ));
+    word.set("english",words[i]);
+    word.save(null,{
+      success:function(res){
+        //response.success(res);
+      },
+      error:function(res,error){
+        response.success(error);
+      }
+    });
   }
 
-  lexicon.save(null,{
-    success:function(lexicon){
-      response.success(lexicon);
-    },
-    error:function(lexicon,error){
-      response.success(error);
-    }
-  });
-
+  response.success();
 
 });
