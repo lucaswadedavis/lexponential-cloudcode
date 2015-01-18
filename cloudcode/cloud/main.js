@@ -1,6 +1,7 @@
-var gtkey=require('cloud/creds.js').gtkey;
+var gtkey=require('cloud/creds.js');
 
 Parse.Cloud.afterSave("Todo", function(request, response) {
+  console.log(gtkey() );
   var words;
   words=request.object.get("content");
   words=words.split(" ");
@@ -25,20 +26,23 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
             var newWord=new Word();
             //put translate command here
             var url="https://www.googleapis.com/language/translate/v2";
-            url+="?key="+gtkey+"&q="+word+"&source=es&target=en";
-            
+            url+="?key="+gtkey()+"&q="+word+"&source=es&target=en";
+            console.log(url);
             Parse.Cloud.httpRequest({
               url: url,
               success: function(httpResponse) {
                 console.log(httpResponse.text);
-                
-        
-                  console.log('this next thing should be the translation:');
-                  console.log(data.translation);
-                  newWord.set("spanish",word);
-                  newWord.set("english",data.translation);
-                  newWord.set('count',count);
-                  newWord.save();
+                var res=JSON.parse(httpResponse.text);
+                var english="no translation";
+                if (res.data.translations.length>0 && res.data.translations[0].translatedText){
+                  english=res.data.translations[0].translatedText;
+                }
+                console.log('this next thing should be the translation:');
+                console.log(english);
+                newWord.set("spanish",word);
+                newWord.set("english",english);
+                newWord.set('count',count);
+                newWord.save();
 
     
                 
