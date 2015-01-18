@@ -15,23 +15,16 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
     var query = new Parse.Query(Word);
     query.equalTo("english", words[i]);
     query.find({
-      success: function(results) {
-        //alert("Successfully retrieved " + results.length + " scores.");
-        // Do something with the returned Parse.Object values
-        for (var i = 0; i < results.length; i++) { 
-          var count = results[i].get('count');
-          results[i].set('count',count+1);
-          results[i].save();
-          //var object = results[i];
-          //alert(object.id + ' - ' + object.get('playerName'));
-        }
-      },
-      error: function(error) {
-        //alert("Error: " + error.code + " " + error.message);
+      success:function(res){
+        console.log('search returned');
+        console.log(res);
+      }, error: function(res,err){
+        console.log(err);
       }
-    });
+    })
+
     var word=new Word();
-    word.set("count",1);
+    word.increment("count");
     word.set("english",words[i]);
     word.save(null,{
       success:function(res){
