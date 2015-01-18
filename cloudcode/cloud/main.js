@@ -1,29 +1,58 @@
+var gtkey=require('cloud/creds.js').gtkey;
+
 Parse.Cloud.afterSave("Todo", function(request, response) {
   var words;
   words=request.object.get("content");
   words=words.split(" ");
+  var uniques={};
+  for (var i=0;i<words.length;i++){
+    uniques[words[i]] ? uniques[words[i]]++ : ( uniques[words[i]] = 1 );
+  }
 
   var Word=Parse.Object.extend("Word");
   
-  for (var i=0;i<words.length;i++){
+  for (var key in uniques){
     //query for pre-existing copy
-      (function(word){
-        console.log('inside the iife');
-        console.log(word);
+      (function(word,count){
+        //console.log('inside the iife');
+        //console.log(word);
         var query = new Parse.Query(Word);
-        query.equalTo("english", word);
+        query.equalTo("spanish", word);
         query.find({
         success:function(res){
-          console.log(res.length);
+          //console.log(res.length);
           if (!res.length){
             var newWord=new Word();
-            newWord.increment("count");
-            newWord.set("english",word);
-            newWord.save();
+            //put translate command here
+            var url="https://www.googleapis.com/language/translate/v2";
+            url+="?key="+gtkey+"&q="+word+"&source=es&target=en";
+            
+            Parse.Cloud.httpRequest({
+              url: url,
+              success: function(httpResponse) {
+                console.log(httpResponse.text);
+                
+        
+                  console.log('this next thing should be the translation:');
+                  console.log(data.translation);
+                  newWord.set("spanish",word);
+                  newWord.set("english",data.translation);
+                  newWord.set('count',count);
+                  newWord.save();
+
+    
+                
+              },
+              error: function(httpResponse) {
+                console.error('Request failed with response code ' + httpResponse.status);
+              }
+            });
+            
+            
           }
           
           for (var j=0;j<res.length;j++){
-            res[j].increment('count');
+            res[j].increment('count',count);
             res[j].save(); 
           }
         }, error: function(res,err){
@@ -32,7 +61,7 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
         
       });
     
-    }(words[i]));
+    }(key,uniques[key]));
 
     /*
     
