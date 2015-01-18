@@ -1,7 +1,3 @@
-
-// Use Parse.Cloud.define to define as many cloud functions as you want.
-// For example:
-
 Parse.Cloud.afterSave("Todo", function(request, response) {
   var words;
   words=request.object.get("content");
@@ -11,32 +7,40 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
   
   for (var i=0;i<words.length;i++){
     //query for pre-existing copy
-    //var found=false;
-    var query = new Parse.Query(Word);
-    query.equalTo("english", words[i]);
-    query.find({
-      success:function(res){
-        console.log('search returned');
-        console.log(res);
-      }, error: function(res,err){
-        console.log(err);
-      }
-    })
+      (function(word){
+        console.log('inside the iife');
+        console.log(word);
+        var query = new Parse.Query(Word);
+        query.equalTo("english", word);
+        query.find({
+        success:function(res){
+          console.log(res.length);
+          if (!res.length){
+            var newWord=new Word();
+            newWord.increment("count");
+            newWord.set("english",word);
+            newWord.save();
+          }
+          
+          for (var j=0;j<res.length;j++){
+            res[j].increment('count');
+            res[j].save(); 
+          }
+        }, error: function(res,err){
+          console.log(err);
+        }
+        
+      });
+    
+    }(words[i]));
 
-    var word=new Word();
-    word.increment("count");
-    word.set("english",words[i]);
-    word.save(null,{
-      success:function(res){
-        //response.success(res);
-      },
-      error:function(res,error){
-        response.success(error);
-      }
-    });
+    /*
+    
+    
+    */
   }
 
-  response.success();
+  //response.success();
 
 });
 
