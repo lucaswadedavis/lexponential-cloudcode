@@ -1,8 +1,9 @@
 var gtkey=require('cloud/creds.js');
 
 Parse.Cloud.afterSave("Todo", function(request, response) {
-  console.log(gtkey() );
+  //console.log(gtkey() );
   var words;
+  var user=request.user;
   words=request.object.get("content");
   words=words.split(" ");
   var uniques={};
@@ -18,7 +19,7 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
         //console.log('inside the iife');
         //console.log(word);
         var query = new Parse.Query(Word);
-        query.equalTo("spanish", word);
+        query.equalTo("word", word);
         query.find({
         success:function(res){
           //console.log(res.length);
@@ -27,7 +28,7 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
             //put translate command here
             var url="https://www.googleapis.com/language/translate/v2";
             url+="?key="+gtkey()+"&q="+word+"&source=es&target=en";
-            console.log(url);
+            //console.log(url);
             Parse.Cloud.httpRequest({
               url: url,
               success: function(httpResponse) {
@@ -37,11 +38,14 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
                 if (res.data.translations.length>0 && res.data.translations[0].translatedText){
                   english=res.data.translations[0].translatedText;
                 }
-                console.log('this next thing should be the translation:');
-                console.log(english);
-                newWord.set("spanish",word);
-                newWord.set("english",english);
+                //console.log('this next thing should be the translation:');
+                //console.log(english);
+                newWord.set("sourceLang","spanish");
+                newWord.set("targetLang","english")
+                newWord.set("word",word);
+                newWord.set("translation",english);
                 newWord.set('count',count);
+                newWord.set('owner',user);
                 newWord.save();
 
     
