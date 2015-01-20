@@ -57,10 +57,10 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
   };
   
   var sourceLang=request.object.get("sourceLang");
-  sourceLang=languages[sourceLang.toLowerCase()] ? languages[sourceLang.toLowerCase()] : "es" ;
+  var sourceLangAbbreviation=languages[sourceLang.toLowerCase()] ? languages[sourceLang.toLowerCase()] : "es" ;
   
   var targetLang=request.object.get("targetLang");
-  targetLang= languages[targetLang.toLowerCase()] ? languages[targetLang.toLowerCase()] : "en";
+  var targetLangAbbreviation= languages[targetLang.toLowerCase()] ? languages[targetLang.toLowerCase()] : "en";
   
   var user=request.user;
   words=request.object.get("content");
@@ -86,27 +86,30 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
             var newWord=new Word();
             //put translate command here
             var url="https://www.googleapis.com/language/translate/v2";
-            url+="?key="+gtkey()+"&q="+word+"&source="+sourceLang+"&target="+targetLang+"";
+            url+="?key="+gtkey()+"&q="+word+"&source="+sourceLangAbbreviation+"&target="+targetLangAbbreviation+"";
             //console.log(url);
             Parse.Cloud.httpRequest({
               url: url,
               success: function(httpResponse) {
                 console.log(httpResponse.text);
                 var res=JSON.parse(httpResponse.text);
-                var english="no translation";
+                var translation="no translation";
                 if (res.data.translations.length>0 && res.data.translations[0].translatedText){
-                  english=res.data.translations[0].translatedText;
+                  translation=res.data.translations[0].translatedText;
                 }
                 //console.log('this next thing should be the translation:');
                 //console.log(english);
-                newWord.set("sourceLang","spanish");
-                newWord.set("targetLang","english")
-                newWord.set("word",word);
-                newWord.set("translation",english);
-                newWord.set('count',count);
-                newWord.set('owner',user);
-                newWord.save();
-
+                if (translation==="no translation"){
+                  return;
+                }else {
+                  newWord.set("sourceLang",sourceLang);
+                  newWord.set("targetLang",targetLang)
+                  newWord.set("word",word);
+                  newWord.set("translation",translation);
+                  newWord.set('count',count);
+                  newWord.set('owner',user);
+                  newWord.save();
+                }
     
                 
               },
