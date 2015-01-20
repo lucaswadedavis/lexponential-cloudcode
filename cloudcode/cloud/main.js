@@ -108,6 +108,7 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
                   newWord.set("translation",translation);
                   newWord.set('count',count);
                   newWord.set('owner',user);
+                  newWord.set('exposures',1);
                   newWord.save();
                 }
     
