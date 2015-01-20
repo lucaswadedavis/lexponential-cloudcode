@@ -3,6 +3,65 @@ var gtkey=require('cloud/creds.js');
 Parse.Cloud.afterSave("Todo", function(request, response) {
   //console.log(gtkey() );
   var words;
+  var languages={
+    "afrikaans":"af",
+    "albanian":"sq",
+    "arabic":"ar",
+    "azerbaijani":"az",
+    "basque":"eu",
+    "bengali":"bn",
+    "belarusian":"be",
+    "bulgarian":"bg",
+    "catalan":"ca",
+    "croatian":"hr",
+    "czech":"cs",
+    "danish":"da",
+    "dutch":"nl",
+    "english":"en",
+    "esperanto":"eo",
+    "estonian":"et",
+    "finnish":"fi",
+    "french":"fr",
+    "galician":"gl",
+    "georgian":"ka",
+    "german":"de",
+    "greek":"el",
+    "haitian Creole":"ht",
+    "hebrew":"iw",
+    "hindi":"hi",
+    "hungarian":"hu",
+    "icelandic":"is",
+    "irish":"ga",
+    "italian":"it",
+    "latin":"la",
+    "latvian":"lv",
+    "lithuanian":"lt",
+    "macedonian":"mk",
+    "norwegian":"no",
+    "persian":"fa",
+    "polish":"pl",
+    "portuguese":"pt",
+    "romanian":"ro",
+    "russian":"ru",
+    "serbian":"sr",
+    "slovak":"sk",
+    "slovenian":"sl",
+    "spanish":"es",
+    "swahili":"sw",
+    "swedish":"sv",
+    "turkish":"tr",
+    "ukrainian":"uk",
+    "urdu":"ur",
+    "welsh":"cy",
+    "yiddish":"yi"
+  };
+  
+  var sourceLang=request.object.get("sourceLang");
+  sourceLang=languages[sourceLang.toLowerCase()] ? languages[sourceLang.toLowerCase()] : "es" ;
+  
+  var targetLang=request.object.get("targetLang");
+  targetLang= languages[targetLang.toLowerCase()] ? languages[targetLang.toLowerCase()] : "en";
+  
   var user=request.user;
   words=request.object.get("content");
   words=words.split(" ");
@@ -27,7 +86,7 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
             var newWord=new Word();
             //put translate command here
             var url="https://www.googleapis.com/language/translate/v2";
-            url+="?key="+gtkey()+"&q="+word+"&source=es&target=en";
+            url+="?key="+gtkey()+"&q="+word+"&source="+sourceLang+"&target="+targetLang+"";
             //console.log(url);
             Parse.Cloud.httpRequest({
               url: url,
