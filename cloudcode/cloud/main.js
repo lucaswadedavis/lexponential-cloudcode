@@ -127,7 +127,7 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
             console.log(res[j].get('owner'), user);
 
             if (res[j].get("owner")!==user){
-              var copy=new Parse.Object.extend("Word");
+              var copy=new Word;
               
               copy.set("exposures",1);
               copy.set("word",res[j].get('word'));
