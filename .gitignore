@@ -7,3 +7,5 @@ cloudcode/cloud/creds.js
 cloudcode/public/bower_components/
 
 cloudcode/public/js/creds.js
+
+cloudcode/cloud/tsts.sh
