@@ -76,7 +76,7 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
     //query for pre-existing copy
       (function(word,count){
         //console.log('inside the iife');
-        console.log(word);
+        //console.log(word);
         var query = new Parse.Query(Word);
         query.equalTo("word", word);
         query.find({
@@ -108,7 +108,7 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
                   newWord.set("translation",translation);
                   newWord.set('count',count);
                   newWord.set('owner',user);
-                  newWord.set('exposures',1);
+                  newWord.set('exposures',1)
                   newWord.save();
                 }
     
@@ -123,23 +123,8 @@ Parse.Cloud.afterSave("Todo", function(request, response) {
           }
           
           for (var j=0;j<res.length;j++){
-            //here's the spot              
-            console.log(res[j].get('owner'), user);
-
-            if (res[j].get("owner")!==user){
-              var copy=new Word;
-              
-              copy.set("exposures",1);
-              copy.set("word",res[j].get('word'));
-              copy.set("translation",res[j].get('translation'));
-              copy.set("sourceLang",res[j].get('sourceLang'));
-              copy.set("targetLang",res[j].get('targetLang'));
-              copy.set("owner",user);
-              copy.save();
-            } else { 
-              res[j].increment('count',count);
-              res[j].save(); 
-            }
+            res[j].increment('count',count);
+            res[j].save(); 
           }
         }, error: function(res,err){
           console.log(err);
