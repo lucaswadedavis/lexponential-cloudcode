@@ -1,6 +1,6 @@
 var gtkey=require('cloud/creds.js');
 
-Parse.Cloud.afterSave("Todo", function(request, response) {
+Parse.Cloud.afterSave("Lexiome", function(request, response) {
   //console.log(gtkey() );
   var words;
   var languages={
