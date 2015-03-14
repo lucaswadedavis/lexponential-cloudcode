@@ -2,7 +2,7 @@ var gtkey=require('cloud/creds.js');
 
 Parse.Cloud.afterSave("Lexiome", function(request, response) {
   //console.log(gtkey() );
-  var words;
+  var lexemes;
   var languages={
     "afrikaans":"af",
     "albanian":"sq",
@@ -63,30 +63,30 @@ Parse.Cloud.afterSave("Lexiome", function(request, response) {
   var targetLangAbbreviation= languages[targetLang.toLowerCase()] ? languages[targetLang.toLowerCase()] : "en";
   
   var user=request.user;
-  words=request.object.get("content");
-  words=words.split(" ");
+  lexemes=request.object.get("content");
+  lexemes=lexemes.split(" ");
   var uniques={};
-  for (var i=0;i<words.length;i++){
-    uniques[words[i]] ? uniques[words[i]]++ : ( uniques[words[i]] = 1 );
+  for (var i=0;i<lexemes.length;i++){
+    uniques[lexemes[i]] ? uniques[lexemes[i]]++ : ( uniques[lexemes[i]] = 1 );
   }
 
-  var Word=Parse.Object.extend("Word");
+  var Lexeme=Parse.Object.extend("Lexeme");
   
   for (var key in uniques){
     //query for pre-existing copy
-      (function(word,count){
+      (function(lexeme,count){
         //console.log('inside the iife');
-        //console.log(word);
-        var query = new Parse.Query(Word);
-        query.equalTo("word", word);
+        //console.log(lexeme);
+        var query = new Parse.Query(Lexeme);
+        query.equalTo("lexeme", lexeme);
         query.find({
         success:function(res){
           //console.log(res.length);
           if (!res.length){
-            var newWord=new Word();
+            var newLexeme=new Lexeme();
             //put translate command here
             var url="https://www.googleapis.com/language/translate/v2";
-            url+="?key="+gtkey()+"&q="+word+"&source="+sourceLangAbbreviation+"&target="+targetLangAbbreviation+"";
+            url+="?key="+gtkey()+"&q="+lexeme+"&source="+sourceLangAbbreviation+"&target="+targetLangAbbreviation+"";
             //console.log(url);
             Parse.Cloud.httpRequest({
               url: url,
@@ -102,14 +102,14 @@ Parse.Cloud.afterSave("Lexiome", function(request, response) {
                 if (translation==="no translation"){
                   return;
                 }else {
-                  newWord.set("sourceLang",sourceLang);
-                  newWord.set("targetLang",targetLang)
-                  newWord.set("word",word);
-                  newWord.set("translation",translation);
-                  newWord.set('count',count);
-                  newWord.set('owner',user);
-                  newWord.set('exposures',1)
-                  newWord.save();
+                  newLexeme.set("sourceLang",sourceLang);
+                  newLexeme.set("targetLang",targetLang)
+                  newLexeme.set("lexeme",lexeme);
+                  newLexeme.set("translation",translation);
+                  newLexeme.set('count',count);
+                  newLexeme.set('owner',user);
+                  newLexeme.set('exposures',1)
+                  newLexeme.save();
                 }
     
                 
@@ -143,32 +143,3 @@ Parse.Cloud.afterSave("Lexiome", function(request, response) {
   //response.success();
 
 });
-
-//example of a custom route 
-/*
-Parse.Cloud.define("chop", function(request, response) {
-  var words=JSON.parse(request.body);
-  words=words.words;
-  words=words.split(" ");
-
-  //make the Lexicon constructor function (class)
-  var Word=Parse.Object.extend("Word");
-
-  for (var i=0;i<words.length;i++){
-    var word=new Word();
-    word.set("count",Math.floor(1000*Math.random() ));
-    word.set("english",words[i]);
-    word.save(null,{
-      success:function(res){
-        //response.success(res);
-      },
-      error:function(res,error){
-        response.success(error);
-      }
-    });
-  }
-
-  response.success();
-
-});
-*/

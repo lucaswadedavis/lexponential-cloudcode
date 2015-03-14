@@ -97,9 +97,9 @@ app.m.languages={
     
   });
 
-app.m.Word=Parse.Object.extend("Word");
+app.m.Lexeme=Parse.Object.extend("Lexeme");
 
-app.m.words;
+app.m.lexemes;
 ///////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////begin controllers
 
@@ -109,14 +109,14 @@ app.c.init=function(){
   app.v.init();
 };
 
-app.c.getWords=function(cb){
-    var query = new Parse.Query(app.m.Word);
+app.c.getLexemes=function(cb){
+    var query = new Parse.Query(app.m.Lexeme);
     query.equalTo("owner",Parse.User.current() );
     query.equalTo("sourceLang",app.m.sourceLang );
     query.find({
       success:function(results){
         //console.log(results);
-        app.m.words=results;
+        app.m.lexemes=results;
         cb();
       }, error:function(error){
         console.log(error);
@@ -166,17 +166,17 @@ app.v.main=function(){
 
 app.v.displayLexicon=function(){
   if (Parse.User.current()===null){return;}
-  if (app.m.words.length<1){
-    app.c.getWords(function(){
-      app.v.render("div.content",app.t.lexicon(app.m.words) );
+  if (app.m.lexemes.length<1){
+    app.c.getLexemes(function(){
+      app.v.render("div.content",app.t.lexicon(app.m.lexemes) );
     });
   } else {
-    app.v.render("div.content",app.t.lexicon(app.m.words) );
+    app.v.render("div.content",app.t.lexicon(app.m.lexemes) );
   }
 };
 
 app.v.flashcards=function(){
-  if (app.m.words.length>5 && Parse.User.current()!==null){
+  if (app.m.lexemes.length>5 && Parse.User.current()!==null){
     app.v.render("div.content",app.t.flashcards() );
   }
 };
@@ -232,19 +232,19 @@ app.t.navigation=function(){
 app.t.card=function(model){
   var answers=[];
 
-  if (app.m.words.length>5){
-    answers.push({value:"correct",word:model.get("translation")});
+  if (app.m.lexemes.length>5){
+    answers.push({value:"correct",lexeme:model.get("translation")});
     while(answers.length<3){
-      var attempt=_.sample(app.m.words);
+      var attempt=_.sample(app.m.lexemes);
       var matchFound=false;
       for (var i=0;i<answers.length;i++){
-        if (answers[i].word===attempt.get("translation") ){
+        if (answers[i].lexeme===attempt.get("translation") ){
           matchFound=true;
           break;
         }
       }
       if (matchFound===false){
-        answers.push({value:"incorrect",word:attempt.get("translation")});
+        answers.push({value:"incorrect",lexeme:attempt.get("translation")});
       }
     }
     answers=_.shuffle(answers);
@@ -258,13 +258,13 @@ app.t.card=function(model){
     u.increment("pointsAllTime",1);
     u.save();
     
-    for (var i=0;i<app.m.words.length;i++){
-      if (app.m.words[i].id===id){
+    for (var i=0;i<app.m.lexemes.length;i++){
+      if (app.m.lexemes[i].id===id){
         var futureDate=new moment();
-        futureDate=futureDate.add(Math.pow(5,app.m.words[i].get("exposures")),'minutes');
-        app.m.words[i].set("expires",futureDate.toDate());
-        app.m.words[i].increment("exposures",1);
-        app.m.words[i].save();
+        futureDate=futureDate.add(Math.pow(5,app.m.lexemes[i].get("exposures")),'minutes');
+        app.m.lexemes[i].set("expires",futureDate.toDate());
+        app.m.lexemes[i].increment("exposures",1);
+        app.m.lexemes[i].save();
         break;
       }
     }
@@ -280,9 +280,9 @@ app.t.card=function(model){
   
   var d="";
   d+="<div class='card' id='"+model.id+"'>";
-    d+="<div class='question'>"+model.get("word")+"</div>";
+    d+="<div class='question'>"+model.get("lexeme")+"</div>";
     for (var i=0;i<answers.length;i++){
-      d+="<div class='"+answers[i].value+" answer'>"+answers[i].word+"</div>";
+      d+="<div class='"+answers[i].value+" answer'>"+answers[i].lexeme+"</div>";
       
     }
   d+="</div>";
@@ -293,15 +293,15 @@ app.t.flashcards=function(){
   //select two cards at random
   var fc="";
   var c1;
-  if (app.m.words.length){
-    app.m.words=_.sortBy(app.m.words,function(item){return item.get("count")});
-    app.m.words.reverse();
-    c1=app.m.words[0];
-    for (var i=0;i<app.m.words.length;i++){
+  if (app.m.lexemes.length){
+    app.m.lexemes=_.sortBy(app.m.lexemes,function(item){return item.get("count")});
+    app.m.lexemes.reverse();
+    c1=app.m.lexemes[0];
+    for (var i=0;i<app.m.lexemes.length;i++){
       
       var now=new moment;
-      if (app.m.words[i].get('expires') === undefined || now.isAfter(app.m.words[i].get('expires'))){
-       c1=app.m.words[i];       
+      if (app.m.lexemes[i].get('expires') === undefined || now.isAfter(app.m.lexemes[i].get('expires'))){
+       c1=app.m.lexemes[i];       
        break;
       }
     }
@@ -324,7 +324,7 @@ app.t.selectLanguage=function(){
       d+="<button id='"+key+"'>"+key+"</button>";
       boum.click("div#language-selection button#"+key,function(key){
         app.m.sourceLang=key;
-        app.c.getWords(app.v.flashcards);
+        app.c.getLexemes(app.v.flashcards);
         //app.v.inputView();
         
       },key);
@@ -339,13 +339,13 @@ app.t.lexicon=function(collection){
     d+="<h2>"+app.m.sourceLang[0].toUpperCase()+app.m.sourceLang.slice(1)+"</h2>";
     d+="<div class='chart'></div>";
     d+="<table>";
-    d+="<tr><th>Times Counted</th><th>Original Word</th><th>Translation</th><th>Exposures</th><th>Expires</th></tr>";
+    d+="<tr><th>Times Counted</th><th>Original Lexeme</th><th>Translation</th><th>Exposures</th><th>Expires</th></tr>";
     collection=_.sortBy(collection,function(item){return item.get("count")});
     collection.reverse();
     for (var i=0;i<collection.length;i++){
       d+="<tr>";
         d+="<td>"+collection[i].get("count")+"</td>";
-        d+="<td>"+collection[i].get("word")+"</td>";
+        d+="<td>"+collection[i].get("lexeme")+"</td>";
         d+="<td>"+collection[i].get("translation")+"</td>";
         d+="<td>"+collection[i].get("exposures")+"</td>";
         var now=new moment;
