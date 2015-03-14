@@ -55,24 +55,24 @@ var languages={
 
 var Lexeme = Parse.Object.extend("Lexeme");
 
-var addLexeme = function(lexeme, count, opts){
-  //query for pre-existing copy
-      
-  //console.log('inside the iife');
-  //console.log(lexeme);
+var queryUrl = function(key,opts){
+  var url="https://www.googleapis.com/language/translate/v2";
+  url+="?key="+key+"&q="+opts.lexeme+"&source="+opts.sourceLangAbbreviation+"&target="+opts.targetLangAbbreviation+"";
+
+  return url;
+};
+
+var addLexeme = function(opts){
   var query = new Parse.Query(Lexeme);
-  query.equalTo("lexeme", lexeme);
+  query.equalTo("lexeme", opts.lexeme);
   query.find({
   success:function(res){
     //console.log(res.length);
     if (!res.length){
       var newLexeme=new Lexeme();
       //put translate command here
-      var url="https://www.googleapis.com/language/translate/v2";
-      url+="?key="+gtkey()+"&q="+lexeme+"&source="+opts.sourceLangAbbreviation+"&target="+opts.targetLangAbbreviation+"";
-      //console.log(url);
       Parse.Cloud.httpRequest({
-        url: url,
+        url: queryUrl(gtkey(), opts),
         success: function(httpResponse) {
           console.log(httpResponse.text);
           var res=JSON.parse(httpResponse.text);
@@ -87,9 +87,9 @@ var addLexeme = function(lexeme, count, opts){
           }else {
             newLexeme.set("sourceLang",opts.sourceLang);
             newLexeme.set("targetLang",opts.targetLang)
-            newLexeme.set("lexeme",lexeme);
+            newLexeme.set("lexeme",opts.lexeme);
             newLexeme.set("translation",translation);
-            newLexeme.set('count',count);
+            newLexeme.set('count',opts.count);
             newLexeme.set('owner',opts.user);
             newLexeme.set('exposures',1)
             newLexeme.save();
@@ -98,7 +98,7 @@ var addLexeme = function(lexeme, count, opts){
           
         },
         error: function(httpResponse) {
-          console.error('Request failed with response code ' + httpResponse.status);
+          console.error('lexeme: ' + opts.lexeme + ' --- Request failed with response code ' + httpResponse.status);
         }
       });
       
@@ -106,7 +106,7 @@ var addLexeme = function(lexeme, count, opts){
     }
     //what am I doing here?
     for (var j=0;j<res.length;j++){
-      res[j].increment('count',count);
+      res[j].increment('count',opts.count);
       res[j].save(); 
     }
   }, error: function(res,err){
@@ -129,22 +129,27 @@ Parse.Cloud.afterSave("Lexiome", function(request, response) {
   var user=request.user;
   lexemes=request.object.get("content");
   lexemes=lexemes.split(" ");
+  
+  for (var i=0;i<lexemes.length;i++){
+    lexemes[i] = lexemes[i].replace(".","");
+  }
+  
   var uniques={};
   for (var i=0;i<lexemes.length;i++){
     uniques[lexemes[i]] ? uniques[lexemes[i]]++ : ( uniques[lexemes[i]] = 1 );
   }
 
   
-  var opts = {};
-  opts.sourceLang = sourceLang;
-  opts.targetLang = targetLang;
-  opts.user = user;
-  opts.sourceLangAbbreviation = sourceLangAbbreviation;
-  opts.targetLangAbbreviation = targetLangAbbreviation;
-  
-  
   for (var key in uniques){
-    addLexeme(key, uniques[key], opts);
+    var opts = {};
+    opts.sourceLang = sourceLang;
+    opts.targetLang = targetLang;
+    opts.user = user;
+    opts.sourceLangAbbreviation = sourceLangAbbreviation;
+    opts.targetLangAbbreviation = targetLangAbbreviation;
+    opts.lexeme = key;
+    opts.count = uniques[key];
+    addLexeme(opts);
   }
 
 });
