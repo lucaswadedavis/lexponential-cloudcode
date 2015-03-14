@@ -53,7 +53,9 @@ var languages={
   "yiddish":"yi"
 };
 
-addLexeme = function(lexeme, count, opts){
+var Lexeme = Parse.Object.extend("Lexeme");
+
+var addLexeme = function(lexeme, count, opts){
   //query for pre-existing copy
       
   //console.log('inside the iife');
@@ -86,7 +88,7 @@ addLexeme = function(lexeme, count, opts){
             newLexeme.set("sourceLang",opts.sourceLang);
             newLexeme.set("targetLang",opts.targetLang)
             newLexeme.set("lexeme",lexeme);
-            newLexeme.set("translation",opts.translation);
+            newLexeme.set("translation",translation);
             newLexeme.set('count',count);
             newLexeme.set('owner',opts.user);
             newLexeme.set('exposures',1)
@@ -132,12 +134,10 @@ Parse.Cloud.afterSave("Lexiome", function(request, response) {
     uniques[lexemes[i]] ? uniques[lexemes[i]]++ : ( uniques[lexemes[i]] = 1 );
   }
 
-  var Lexeme=Parse.Object.extend("Lexeme");
   
   var opts = {};
   opts.sourceLang = sourceLang;
   opts.targetLang = targetLang;
-  opts.translation = translation;
   opts.user = user;
   opts.sourceLangAbbreviation = sourceLangAbbreviation;
   opts.targetLangAbbreviation = targetLangAbbreviation;
