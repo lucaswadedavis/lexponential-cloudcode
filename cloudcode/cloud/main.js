@@ -191,8 +191,11 @@ Parse.Cloud.afterSave("Lexiome", function(request, response) {
   }
   
   //clear the translation queue
-  translationQueue.dequeue();
   
 });
 
 
+Parse.Cloud.job("dequeueTranslation", function(request, status) {
+  translationQueue.dequeue();
+
+});
