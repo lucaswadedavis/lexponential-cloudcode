@@ -55,6 +55,7 @@ var languages={
 };
 
 var Lexeme = Parse.Object.extend("Lexeme");
+var Queue = Parse.Object.extend("Queue");
 
 var queryUrl = function(key,opts){
   var url="https://www.googleapis.com/language/translate/v2";
@@ -62,24 +63,20 @@ var queryUrl = function(key,opts){
   return url;
 };
 
-var translationQueue = function(opts){
-  var q = translationQueue.queue;
+var translationQueue = {
   
-  translationQueue.queue.push(opts);
-  
-};
-
-translationQueue.queue = [];
-
-translationQueue.fire = function(){
-  var q = translationQueue.queue;
-  
-  if (q.length>0){
-    getTranslation( q.shift(), function(){
-      translationQueue.fire();
-    });
+  enqueue: function(opts){
+    var q = new Queue();
+    for (var key in opts){
+      q.set(key,opts[key]);
+    }
+    q.save();
+  },
+  dequeue: function(){
+    console.log("dequeue");
   }
 };
+
 
 var getTranslation = function(opts, cb){
   //console.log(JSON.stringify(opts));
@@ -137,7 +134,7 @@ var addLexeme = function(opts){
     success:function(res){
       //if the translation doesn't yet exist, then ask someone to translate it.
       if (!res.length){
-        translationQueue(opts);
+        translationQueue.enqueue(opts);
         //getTranslation(opts);
       }
       //if, instead the entry already exists
@@ -194,7 +191,7 @@ Parse.Cloud.afterSave("Lexiome", function(request, response) {
   }
   
   //clear the translation queue
-  translationQueue.fire();
+  translationQueue.dequeue();
   
 });
 
