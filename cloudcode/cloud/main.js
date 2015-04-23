@@ -104,12 +104,9 @@ var getTranslation = function(opts, cb){
         newLexeme.set('exposures',1);
         newLexeme.save();
       }
-      
-      cb();
     },
     error: function(httpResponse) {
       console.error('lexeme translation error: ' + opts.lexeme + ' --- Request failed with response code ' + httpResponse.status);
-      cb();
     }
   });
 };
@@ -191,11 +188,30 @@ Parse.Cloud.afterSave("Lexiome", function(request, response) {
   }
   
   //clear the translation queue
+  translationQueue.dequeue();
   
 });
 
 
 Parse.Cloud.job("dequeueTranslation", function(request, status) {
-  translationQueue.dequeue();
-
+  var query = new Parse.Query(Queue);
+  query.each(function(lexeme) {
+      // Update to plan value passed in
+      
+      var opts = {};
+      opts.sourceLang = lexeme.get("sourceLang");
+      opts.targetLang = lexeme.get("targetLang");
+      opts.user = lexeme.get("user");
+      opts.sourceLangAbbreviation = lexeme.get("sourceLangAbbreviation");
+      opts.targetLangAbbreviation = lexeme.get("targetLangAbbreviation");
+      opts.lexeme = lexeme.get("lexeme");
+      opts.count = lexeme.get("count");
+      getTranslation(opts)
+  }).then(function() {
+    // Set the job's success status
+    status.success("dequeueTranslation completed successfully.");
+  }, function(error) {
+    // Set the job's error status
+    status.error("Error: dequeueTranslation failed: ",error);
+  });
 });
