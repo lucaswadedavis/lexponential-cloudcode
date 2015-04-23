@@ -98,6 +98,19 @@ var getTranslation = function(opts){
   });
 };
 
+var saveNull = function(opts){
+  var newLexeme=new Lexeme();
+
+  newLexeme.set("translation",null);
+  newLexeme.set("sourceLang",opts.sourceLang);
+  newLexeme.set("targetLang",opts.targetLang);
+  newLexeme.set("lexeme",opts.lexeme);
+  newLexeme.set('count',opts.count);
+  newLexeme.set('owner',opts.user);
+  newLexeme.set('exposures',1);
+  newLexeme.save();
+};
+
 var addLexeme = function(opts){
   var query = new Parse.Query(Lexeme);
   query.equalTo("lexeme", opts.lexeme);
@@ -114,7 +127,7 @@ var addLexeme = function(opts){
         res[j].save(); 
       }
     }, error: function(res,err){
-      console.log(err);
+      console.log("Error adding Lexeme: ",err);
     }
   });
 };
