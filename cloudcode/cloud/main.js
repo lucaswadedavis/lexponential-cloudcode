@@ -60,55 +60,71 @@ var Queue = Parse.Object.extend("Queue");
 var queryUrl = function(key,opts){
   var url="https://www.googleapis.com/language/translate/v2";
   url+="?key="+key+"&q="+opts.lexeme+"&source="+opts.sourceLangAbbreviation+"&target="+opts.targetLangAbbreviation+"";
+  //console.log("queryURL: ");
+  //console.log(url);
   return url;
 };
 
 var translationQueue = {
-  
   enqueue: function(opts){
     var q = new Queue();
     for (var key in opts){
       q.set(key,opts[key]);
     }
     q.save();
-  },
-  dequeue: function(){
-    console.log("dequeue");
   }
 };
 
 
-var getTranslation = function(opts, cb){
+var getTranslation = function(opts, status){
+  //console.log("inbound translation request");
   //console.log(JSON.stringify(opts));
-  Parse.Cloud.httpRequest({
-    url: queryUrl(gtkey(), opts),
-    success: function(httpResponse) {
-      //console.log(httpResponse.text);
-      var res=JSON.parse(httpResponse.text);
-      var translation="no translation";
+  var url = queryUrl(gtkey(), opts);
+  console.log("83"+url);
+  console.log("84"+JSON.stringify(opts) );
+  
+  var success = function(httpResponse) {
+    console.log("response from translator");
+    console.log(httpResponse.text);
+    var res=JSON.parse(httpResponse.text);
+    var translation="no translation";
 
-      if (res.data.translations.length>0 && res.data.translations[0].translatedText){
-        translation=res.data.translations[0].translatedText;
-      }
-      
-      //as long as we get a translation back, add it as a new Lexeme
-      if (translation !== "no translation"){  
-        var newLexeme=new Lexeme();
-
-        newLexeme.set("lexeme",opts.lexeme);
-        newLexeme.set("translation",translation);
-        newLexeme.set("sourceLang",opts.sourceLang);
-        newLexeme.set("targetLang",opts.targetLang);
-        newLexeme.set('count',opts.count);
-        newLexeme.set('owner',opts.user);
-        newLexeme.set('exposures',1);
-        newLexeme.save();
-      }
-    },
-    error: function(httpResponse) {
-      console.error('lexeme translation error: ' + opts.lexeme + ' --- Request failed with response code ' + httpResponse.status);
+    if (res.data.translations.length>0 && res.data.translations[0].translatedText){
+      translation=res.data.translations[0].translatedText;
     }
-  });
+    
+    //as long as we get a translation back, add it as a new Lexeme
+    if (translation !== "no translation"){  
+      var newLexeme=new Lexeme();
+
+      newLexeme.set("lexeme",opts.lexeme);
+      newLexeme.set("translation",translation);
+      newLexeme.set("sourceLang",opts.sourceLang);
+      newLexeme.set("targetLang",opts.targetLang);
+      newLexeme.set('count',opts.count);
+      newLexeme.set('owner',opts.user);
+      newLexeme.set('exposures',1);
+      newLexeme.save();
+    }
+    
+    status ? status.success("dequeueTranslation completed successfully.") : null;
+  };
+  
+  var error =  function(httpResponse) {
+    console.error('lexeme translation error: ' + opts.lexeme + ' --- Request failed with response code ' + httpResponse.status);
+    status ? status.success("dequeueTranslation completed successfully.") : null;
+
+  };  
+  
+  var payload = {
+    url: url,
+    //headers: {'Content-Type': 'application/json;charset=utf-8'},
+    success: success,
+    error: error
+  };
+  console.log(payload);  
+  Parse.Cloud.httpRequest(payload);
+
 };
 
 var saveNull = function(opts){
@@ -131,8 +147,8 @@ var addLexeme = function(opts){
     success:function(res){
       //if the translation doesn't yet exist, then ask someone to translate it.
       if (!res.length){
-        translationQueue.enqueue(opts);
-        //getTranslation(opts);
+        //translationQueue.enqueue(opts);
+        getTranslation(opts);
       }
       //if, instead the entry already exists
       //console.log('addLexeme --- ' + JSON.stringify(res));
@@ -187,29 +203,41 @@ Parse.Cloud.afterSave("Lexiome", function(request, response) {
     }
   }
   
-  //clear the translation queue
-  translationQueue.dequeue();
-  
 });
 
 
 Parse.Cloud.job("dequeueTranslation", function(request, status) {
-  var query = new Parse.Query(Queue);
-  query.each(function(lexeme) {
-      // Update to plan value passed in
-      
-      var opts = {};
-      opts.sourceLang = lexeme.get("sourceLang");
-      opts.targetLang = lexeme.get("targetLang");
-      opts.user = lexeme.get("user");
-      opts.sourceLangAbbreviation = lexeme.get("sourceLangAbbreviation");
-      opts.targetLangAbbreviation = lexeme.get("targetLangAbbreviation");
-      opts.lexeme = lexeme.get("lexeme");
-      opts.count = lexeme.get("count");
-      getTranslation(opts)
-  }).then(function() {
+  var opts;
+  
+  var lexemes = new Parse.Query("Queue");
+  lexemes.limit(10);
+  lexemes.find().then(function(collection){    
+      //console.log("lexemes: ");
+      //console.log(JSON.stringify(collection));
+      for (var i=0;i<collection.length;i++){
+        var lexeme = collection[i];
+        opts = {};
+        opts.sourceLang = lexeme.get("sourceLang");
+        opts.targetLang = lexeme.get("targetLang");
+        opts.user = lexeme.get("user");
+        opts.sourceLangAbbreviation = lexeme.get("sourceLangAbbreviation");
+        opts.targetLangAbbreviation = lexeme.get("targetLangAbbreviation");
+        opts.lexeme = lexeme.get("lexeme");
+        opts.count = lexeme.get("count");
+        //console.log("Job - dequeueTranslation: ");
+        //console.log(opts);
+        if (i === collection.length-1){
+          getTranslation(opts,status);
+        } else {
+          getTranslation(opts);
+        }
+        //lexeme.destroy({});
+        //console.log("lexeme: ", lexeme.attributes.lexeme );
+      }
+    }).then(function() {
     // Set the job's success status
-    status.success("dequeueTranslation completed successfully.");
+    //status.success("dequeueTranslation completed successfully.");
+    //console.log("232 first callback")
   }, function(error) {
     // Set the job's error status
     status.error("Error: dequeueTranslation failed: ",error);
